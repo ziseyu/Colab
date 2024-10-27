@@ -1,4 +1,4 @@
-对Colad某项目的重写，使代码能够部署在Cloudflare。
+对Colab某项目的重写，使代码能够部署在Cloudflare。
 
 很好的主（备）用节点，ip比较干净（能上GPT）。
 
