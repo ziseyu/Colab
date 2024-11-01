@@ -4,15 +4,12 @@ addEventListener('fetch', event => {
 
 async function handleRequest(request) {
   const apiUrl = 'http://api.skrapp.net/api/serverlist';
+  const templateUrl = 'https://templates.xyhk.us.kg/';
 
   try {
     const responseData = await fetchServerData(apiUrl);
-    return new Response(responseData, {
-      headers: {
-        'Content-Type': 'text/yaml; charset=utf-8',
-        'Cache-Control': 'no-cache'
-      }
-    });
+    const clashConfig = await generateClashConfig(responseData, templateUrl);
+    return new Response(clashConfig, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   } catch (error) {
     return new Response('Error: ' + error.message, { status: 500 });
   }
@@ -30,115 +27,43 @@ async function fetchServerData(apiUrl) {
 
   const response = await fetch(apiUrl, { headers });
   const data = await response.text();
-
   const decryptedData = await aes128cbcDecrypt(data, '65151f8d966bf596', '88ca0f0ea1ecf975');
-  const parsedData = JSON.parse(decryptedData.match(/({.*})/)[0]).data;
-
-  const proxies = formatProxies(parsedData);
-  const config = generateClashConfig(proxies);
-  return config;
+  return formatProxies(JSON.parse(decryptedData.match(/({.*})/)[0]).data);
 }
 
 function formatProxies(data) {
-  return data.map(o => ({
-    name: `${o.area || '未知区域'}-${o.title || '未命名'}`,
-    type: 'ss',
-    server: o.ip,
-    port: o.port,
-    cipher: 'aes-256-cfb',
-    password: o.password,
-    udp: true
+  return data.map(({ area = '未知区域', title = '未命名', ip, port, password, type = 'ss', udp = true }) => ({
+    area, title, ip, port, password, type, udp
   }));
 }
 
-function generateClashConfig(proxies) {
-  const proxyEntries = proxies.map(p => (
-    `  - name: "${p.name}"\n    type: ${p.type}\n    server: "${p.server}"\n    port: "${p.port}"\n    cipher: ${p.cipher}\n    password: "${p.password}"\n    udp: ${p.udp}`
-  )).join('\n');
-  const proxyNames = proxies.map(p => `- "${p.name}"`).join('\n      ');
-  const proxyGroups = `
-proxy-groups:
-  - name: "🚀 节点选择"
-    type: select
-    proxies:
-      - "♻️ 自动选择"
-      - "DIRECT"
-      ${proxyNames}
-  - name: "♻️ 自动选择"
-    type: url-test
-    url: "https://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
-    proxies:
-      ${proxyNames}
-  - name: "🌍 国外媒体"
-    type: select
-    proxies:
-      - "🚀 节点选择"
-      - "♻️ 自动选择"
-      - "🎯 全球直连"
-      ${proxyNames}
-  - name: "📲 电报信息"
-    type: select
-    proxies:
-      - "🚀 节点选择"
-      - "🎯 全球直连"
-      ${proxyNames}
-  - name: "Ⓜ️ 微软服务"
-    type: select
-    proxies:
-      - "🎯 全球直连"
-      - "🚀 节点选择"
-      ${proxyNames}
-  - name: "🍎 苹果服务"
-    type: select
-    proxies:
-      - "🚀 节点选择"
-      - "🎯 全球直连"
-      ${proxyNames}
-  - name: "🎯 全球直连"
-    type: select
-    proxies:
-      - "DIRECT"
-      - "🚀 节点选择"
-      - "♻️ 自动选择"
-      ${proxyNames}
-  - name: "🛑 全球拦截"
-    type: select
-    proxies:
-      - "REJECT"
-      - "DIRECT"
-  - name: "🍃 应用净化"
-    type: select
-    proxies:
-      - "REJECT"
-      - "DIRECT"
-  - name: "🐟 漏网之鱼"
-    type: select
-    proxies:
-      - "🚀 节点选择"
-      - "🎯 全球直连"
-      - "♻️ 自动选择"
-      ${proxyNames}
-rules:
-  - MATCH,🚀 节点选择
-`;
-  return `proxies:\n${proxyEntries}\n\n${proxyGroups}`;
+async function fetchApiTemplate(templateUrl) {
+  const response = await fetch(templateUrl);
+  if (!response.ok) throw new Error('Failed to fetch template: ' + response.statusText);
+  return await response.text();
 }
-// AES 解密函数
+
+async function generateClashConfig(data, templateUrl) {
+  const template = await fetchApiTemplate(templateUrl);
+  const proxies = data.map(({ area, title, ip, port, type, password, udp }) =>
+    `  - {name: "${area}-${title}", server: "${ip}", port: "${port}", type: "${type}", password: "${password}", cipher: "aes-256-cfb", udp: ${udp}}`
+  ).join('\n');
+
+  const proxyNames = data.map(({ area, title }) => `${area}-${title}`).join('\n        - ');
+
+  return template.replace(/{proxy}/g, proxies).replace(/{proxyNames}/g, proxyNames);
+}
+
 async function aes128cbcDecrypt(encryptedText, key, iv) {
   const encryptedBuffer = hexStringToUint8Array(encryptedText);
   const decryptedBuffer = await crypto.subtle.decrypt(
-    {
-      name: "AES-CBC",
-      iv: new Uint8Array(iv.split('').map(c => c.charCodeAt(0))),
-    },
+    { name: "AES-CBC", iv: new Uint8Array(iv.split('').map(c => c.charCodeAt(0))) },
     await crypto.subtle.importKey("raw", new Uint8Array(key.split('').map(c => c.charCodeAt(0))), "AES-CBC", false, ["decrypt"]),
     encryptedBuffer
   );
-  // 使用 TextDecoder 解码，指定 utf-8
   return new TextDecoder('utf-8').decode(decryptedBuffer);
 }
+
 function hexStringToUint8Array(hexString) {
   const byteArray = new Uint8Array(hexString.length / 2);
   for (let i = 0; i < hexString.length; i += 2) {
