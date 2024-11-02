@@ -4,7 +4,7 @@ addEventListener('fetch', event => {
 
 async function handleRequest(request) {
   const apiUrl = 'http://api.skrapp.net/api/serverlist';
-  const templateUrl = 'https://templates.xyhk.us.kg/';
+  const templateUrl = 'https://templates.xyhk.us.kg/clash';
 
   try {
     const responseData = await fetchServerData(apiUrl);
