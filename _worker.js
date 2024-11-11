@@ -62,7 +62,7 @@ async function getSubscription(urls, UA, userAgentHeader) {
   }
   return [subscriptionContent.flat(), unconvertedLinks];
 }
-let mytoken = 'sub';//此处修改登录密码token
+let mytoken = 'sub';
 let FileName = 'Colab';
 let MainData = '';
 let urls = [];
@@ -174,7 +174,7 @@ async function MD5MD5(value) {
 async function clashFix(content) {
   return content.split("\n").map(line => {
     if (line.startsWith("  - name: ")) {
-      const nameValue = line.split("name: ")[1].replace(/[^a-zA-Z0-9\-_]/g, "_");
+      const nameValue = line.split("name: ")[1];
       return `  - name: ${nameValue}`;
     }
     return line;
