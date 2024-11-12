@@ -51,7 +51,7 @@ export default {
   }
 };
 async function fetchAndDecryptData() {
-  const apiUrl = 'http://api.skrapp.net/api/serverlist';
+  const apiUrl = 'https://application.xyhk.us.kg/serverlist';
   const headers = { 'accept': '/', 'appversion': '1.3.1', 'user-agent': 'SkrKK/1.3.1', 'content-type': 'application/x-www-form-urlencoded' };
   const key = new TextEncoder().encode('65151f8d966bf596');
   const iv = new TextEncoder().encode('88ca0f0ea1ecf975');
