@@ -13,8 +13,5 @@
 * 代码已使用订阅转换器，可允许在Nekobox、V2ray、Clash、Singbox等软件进行订阅，其他软件可自行测试。
 * `注意：本项目一定要绑自定义域名，否则会获取不到节点信息！！`
 
-##  项目测试
-* [测试地址](https://colad.xyhk.us.kg)
-
 ##  更多问题请联系：
 * [Telegram](https://t.me/Enkelte_bot)
